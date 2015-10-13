@@ -16,6 +16,13 @@
 
 package jp.co.cyberagent.android.gpuimage.sample.activity;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
 import android.app.Activity;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -31,14 +38,6 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.SeekBar;
 import android.widget.SeekBar.OnSeekBarChangeListener;
-
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-
 import jp.co.cyberagent.android.gpuimage.GPUImage;
 import jp.co.cyberagent.android.gpuimage.GPUImage.OnPictureSavedListener;
 import jp.co.cyberagent.android.gpuimage.GPUImageFilter;
@@ -48,6 +47,7 @@ import jp.co.cyberagent.android.gpuimage.sample.GPUImageFilterTools.OnGpuImageFi
 import jp.co.cyberagent.android.gpuimage.sample.R;
 import jp.co.cyberagent.android.gpuimage.sample.utils.CameraHelper;
 import jp.co.cyberagent.android.gpuimage.sample.utils.CameraHelper.CameraInfo2;
+import jp.co.cyberagent.android.gpuimage.FaceMode;
 
 public class ActivityCamera extends Activity implements OnSeekBarChangeListener, OnClickListener {
 
@@ -56,6 +56,9 @@ public class ActivityCamera extends Activity implements OnSeekBarChangeListener,
     private CameraLoader mCamera;
     private GPUImageFilter mFilter;
     private FilterAdjuster mFilterAdjuster;
+    
+    private boolean isCameraActive = false;
+    private static FaceMode fm;
 
     @Override
     public void onCreate(final Bundle savedInstanceState) {
@@ -64,6 +67,7 @@ public class ActivityCamera extends Activity implements OnSeekBarChangeListener,
         ((SeekBar) findViewById(R.id.seekBar)).setOnSeekBarChangeListener(this);
         findViewById(R.id.button_choose_filter).setOnClickListener(this);
         findViewById(R.id.button_capture).setOnClickListener(this);
+        findViewById(R.id.use_picture).setOnClickListener(this);
 
         mGPUImage = new GPUImage(this);
         mGPUImage.setGLSurfaceView((GLSurfaceView) findViewById(R.id.surfaceView));
@@ -120,6 +124,19 @@ public class ActivityCamera extends Activity implements OnSeekBarChangeListener,
 
             case R.id.img_switch_camera:
                 mCamera.switchCamera();
+                break;
+                
+            case R.id.use_picture:
+                if(isCameraActive){
+                    mCamera.onPause();
+                    mFilter.setPicTexture(BitmapFactory.decodeResource(getResources(), R.drawable.ldh));
+                    fm = FaceMode.IMAGE_FROM_PICTURE;                    
+                    mFilter.setFm(fm);
+                }else{
+                    mCamera.onResume();
+                    fm = FaceMode.IMAGE_FROM_CAMERA;
+                    mFilter.setFm(fm);
+                }
                 break;
         }
     }
@@ -257,6 +274,7 @@ public class ActivityCamera extends Activity implements OnSeekBarChangeListener,
         }
 
         private void setUpCamera(final int id) {
+            isCameraActive = true;
             mCameraInstance = getCameraInstance(id);
             Parameters parameters = mCameraInstance.getParameters();
             // TODO adjust by getting supportedPreviewSizes and then choosing
@@ -287,9 +305,12 @@ public class ActivityCamera extends Activity implements OnSeekBarChangeListener,
         }
 
         private void releaseCamera() {
+            isCameraActive = false;
             mCameraInstance.setPreviewCallback(null);
             mCameraInstance.release();
             mCameraInstance = null;
         }
+        
+        
     }
 }

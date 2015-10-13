@@ -49,7 +49,7 @@ public class OpenGlUtils {
             GLUtils.texImage2D(GLES20.GL_TEXTURE_2D, 0, img, 0);
         } else {
             GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, usedTexId);
-            GLUtils.texSubImage2D(GLES20.GL_TEXTURE_2D, 0, 0, 0, img);
+            GLUtils.texImage2D(GLES20.GL_TEXTURE_2D, 0, img, 0);
             textures[0] = usedTexId;
         }
         if (recycle) {
@@ -75,8 +75,9 @@ public class OpenGlUtils {
                     0, GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, data);
         } else {
             GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, usedTexId);
-            GLES20.glTexSubImage2D(GLES20.GL_TEXTURE_2D, 0, 0, 0, size.width,
-                    size.height, GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, data);
+//            GLES20.glTexSubImage2D(GLES20.GL_TEXTURE_2D, 0, 0, 0, size.width,
+//                    size.height, GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, data);
+            GLES20.glTexImage2D(GLES20.GL_TEXTURE_2D, 0, GLES20.GL_RGBA, size.width, size.height, 0, GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, data);
             textures[0] = usedTexId;
         }
         return textures[0];

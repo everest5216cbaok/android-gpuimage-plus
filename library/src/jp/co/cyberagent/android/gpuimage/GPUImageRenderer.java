@@ -25,7 +25,7 @@ import android.hardware.Camera.PreviewCallback;
 import android.hardware.Camera.Size;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView.Renderer;
-
+import android.util.Log;
 import jp.co.cyberagent.android.gpuimage.util.TextureRotationUtil;
 
 import javax.microedition.khronos.egl.EGLConfig;
@@ -54,7 +54,6 @@ public class GPUImageRenderer implements Renderer, PreviewCallback {
 
     public final Object mSurfaceChangedWaiter = new Object();
 
-    private int mGLTextureId = NO_IMAGE;
     private SurfaceTexture mSurfaceTexture = null;
     private final FloatBuffer mGLCubeBuffer;
     private final FloatBuffer mGLTextureBuffer;
@@ -115,7 +114,7 @@ public class GPUImageRenderer implements Renderer, PreviewCallback {
     public void onDrawFrame(final GL10 gl) {
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
         runAll(mRunOnDraw);
-        mFilter.onDraw(mGLTextureId, mGLCubeBuffer, mGLTextureBuffer);
+        mFilter.onDrawSingle(mGLCubeBuffer, mGLTextureBuffer);
         runAll(mRunOnDrawEnd);
         if (mSurfaceTexture != null) {
             mSurfaceTexture.updateTexImage();
@@ -132,17 +131,23 @@ public class GPUImageRenderer implements Renderer, PreviewCallback {
 
     @Override
     public void onPreviewFrame(final byte[] data, final Camera camera) {
+        
         final Size previewSize = camera.getParameters().getPreviewSize();
         if (mGLRgbBuffer == null) {
             mGLRgbBuffer = IntBuffer.allocate(previewSize.width * previewSize.height);
         }
         if (mRunOnDraw.isEmpty()) {
+            
             runOnDraw(new Runnable() {
                 @Override
                 public void run() {
+                    
                     GPUImageNativeLibrary.YUVtoRBGA(data, previewSize.width, previewSize.height,
                             mGLRgbBuffer.array());
-                    mGLTextureId = OpenGlUtils.loadTexture(mGLRgbBuffer, previewSize, mGLTextureId);
+                    Log.d(LogTag.TEXTURENUMTAG, "onPreviewFrameBefore " + mFilter.mFilterSourceTexture);
+                    mFilter.mFilterSourceTexture = OpenGlUtils.loadTexture(mGLRgbBuffer, previewSize, mFilter.mFilterSourceTexture);
+                    Log.d(LogTag.TEXTURENUMTAG, "onPreviewFrameAfter " + mFilter.mFilterSourceTexture);
+                    
                     camera.addCallbackBuffer(data);
 
                     if (mImageWidth != previewSize.width) {
@@ -196,9 +201,9 @@ public class GPUImageRenderer implements Renderer, PreviewCallback {
             @Override
             public void run() {
                 GLES20.glDeleteTextures(1, new int[]{
-                        mGLTextureId
+                        mFilter.mFilterSourceTexture
                 }, 0);
-                mGLTextureId = NO_IMAGE;
+                mFilter.mFilterSourceTexture = NO_IMAGE;
             }
         });
     }
@@ -228,8 +233,8 @@ public class GPUImageRenderer implements Renderer, PreviewCallback {
                     mAddedPadding = 0;
                 }
 
-                mGLTextureId = OpenGlUtils.loadTexture(
-                        resizedBitmap != null ? resizedBitmap : bitmap, mGLTextureId, recycle);
+                mFilter.mFilterSourceTexture = OpenGlUtils.loadTexture(
+                        resizedBitmap != null ? resizedBitmap : bitmap, mFilter.mFilterSourceTexture, recycle);
                 if (resizedBitmap != null) {
                     resizedBitmap.recycle();
                 }
