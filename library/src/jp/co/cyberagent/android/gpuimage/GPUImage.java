@@ -150,6 +150,11 @@ public class GPUImage {
         mRenderer.setRotationCamera(rotation, flipHorizontal, flipVertical);
     }
 
+    public void RendererTextureUpdate(){
+        mRenderer.renderTextureStatusUpdate();
+    }
+    
+    
     @TargetApi(11)
     private void setUpCameraGingerbread(final Camera camera) {
         mRenderer.setUpSurfaceTexture(camera);

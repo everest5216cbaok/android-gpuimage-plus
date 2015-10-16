@@ -16,6 +16,19 @@
 
 package jp.co.cyberagent.android.gpuimage;
 
+import static jp.co.cyberagent.android.gpuimage.util.TextureRotationUtil.TEXTURE_NO_ROTATION;
+
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.FloatBuffer;
+import java.nio.IntBuffer;
+import java.util.LinkedList;
+import java.util.Queue;
+
+import javax.microedition.khronos.egl.EGLConfig;
+import javax.microedition.khronos.opengles.GL10;
+
 import android.annotation.TargetApi;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -27,18 +40,6 @@ import android.opengl.GLES20;
 import android.opengl.GLSurfaceView.Renderer;
 import android.util.Log;
 import jp.co.cyberagent.android.gpuimage.util.TextureRotationUtil;
-
-import javax.microedition.khronos.egl.EGLConfig;
-import javax.microedition.khronos.opengles.GL10;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.nio.FloatBuffer;
-import java.nio.IntBuffer;
-import java.util.LinkedList;
-import java.util.Queue;
-
-import static jp.co.cyberagent.android.gpuimage.util.TextureRotationUtil.TEXTURE_NO_ROTATION;
 
 @TargetApi(11)
 public class GPUImageRenderer implements Renderer, PreviewCallback {
@@ -71,6 +72,10 @@ public class GPUImageRenderer implements Renderer, PreviewCallback {
     private boolean mFlipHorizontal;
     private boolean mFlipVertical;
     private GPUImage.ScaleType mScaleType = GPUImage.ScaleType.CENTER_CROP;
+    
+    private boolean surface_texture_should_recreate = true;
+    private boolean filter_texture_should_recreate = true;
+    private int surface_texture_obj;
 
     public GPUImageRenderer(final GPUImageFilter filter) {
         mFilter = filter;
@@ -145,8 +150,21 @@ public class GPUImageRenderer implements Renderer, PreviewCallback {
                     GPUImageNativeLibrary.YUVtoRBGA(data, previewSize.width, previewSize.height,
                             mGLRgbBuffer.array());
                     Log.d(LogTag.TEXTURENUMTAG, "onPreviewFrameBefore " + mFilter.mFilterSourceTexture);
+                    
+                    if(filter_texture_should_recreate){
+                        
+                        if(GLES20.glIsTexture(mFilter.mFilterSourceTexture)){
+                            int [] textures = new int[1];
+                            textures[0] = mFilter.mFilterSourceTexture;
+                            Log.d(LogTag.TEXTURENUMTAG, "release---filter_texture release" );
+                            GLES20.glDeleteTextures(1, textures, 0);
+                        }
+                        filter_texture_should_recreate = false;
+                        mFilter.mFilterSourceTexture = OpenGlUtils.NO_TEXTURE;
+                    }
+                    
                     mFilter.mFilterSourceTexture = OpenGlUtils.loadTexture(mGLRgbBuffer, previewSize, mFilter.mFilterSourceTexture);
-                    Log.d(LogTag.TEXTURENUMTAG, "onPreviewFrameAfter " + mFilter.mFilterSourceTexture);
+                    Log.d(LogTag.TEXTURENUMTAG, "new texture not " + mFilter.mFilterSourceTexture);
                     
                     camera.addCallbackBuffer(data);
 
@@ -159,14 +177,31 @@ public class GPUImageRenderer implements Renderer, PreviewCallback {
             });
         }
     }
+    
+    public void renderTextureStatusUpdate(){
+        filter_texture_should_recreate = true;
+        surface_texture_should_recreate = true;
+    }
 
     public void setUpSurfaceTexture(final Camera camera) {
         runOnDraw(new Runnable() {
             @Override
             public void run() {
                 int[] textures = new int[1];
+                if(surface_texture_should_recreate){
+                    
+                    if(GLES20.glIsTexture(surface_texture_obj)){
+                        Log.d(LogTag.TEXTURENUMTAG, "release---surface_texture release---" + surface_texture_obj);
+                        GLES20.glDeleteTextures(1, textures, 0);
+                    }
+                    surface_texture_obj = OpenGlUtils.NO_TEXTURE;
+                    surface_texture_should_recreate = false;
+                }
+                
                 GLES20.glGenTextures(1, textures, 0);
-                mSurfaceTexture = new SurfaceTexture(textures[0]);
+                surface_texture_obj = textures[0];
+                Log.d(LogTag.TEXTURENUMTAG, "new texture---from surfaceTexture----" + textures[0]);
+                    mSurfaceTexture = new SurfaceTexture(textures[0]);
                 try {
                     camera.setPreviewTexture(mSurfaceTexture);
                     camera.setPreviewCallback(GPUImageRenderer.this);

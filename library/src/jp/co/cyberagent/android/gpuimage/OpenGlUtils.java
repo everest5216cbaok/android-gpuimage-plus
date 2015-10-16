@@ -36,6 +36,7 @@ public class OpenGlUtils {
         int textures[] = new int[1];
         if (usedTexId == NO_TEXTURE) {
             GLES20.glGenTextures(1, textures, 0);
+            Log.d(LogTag.TEXTURENUMTAG, "new texture---from 1----" + textures[0]);
             GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textures[0]);
             GLES20.glTexParameterf(GLES20.GL_TEXTURE_2D,
                     GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR);
@@ -62,6 +63,7 @@ public class OpenGlUtils {
         int textures[] = new int[1];
         if (usedTexId == NO_TEXTURE) {
             GLES20.glGenTextures(1, textures, 0);
+            Log.d(LogTag.TEXTURENUMTAG, "new texture---from 2----" + textures[0]);
             GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textures[0]);
             GLES20.glTexParameterf(GLES20.GL_TEXTURE_2D,
                     GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR);

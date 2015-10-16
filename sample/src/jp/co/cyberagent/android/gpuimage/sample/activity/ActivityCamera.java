@@ -41,6 +41,7 @@ import android.widget.SeekBar.OnSeekBarChangeListener;
 import jp.co.cyberagent.android.gpuimage.GPUImage;
 import jp.co.cyberagent.android.gpuimage.GPUImage.OnPictureSavedListener;
 import jp.co.cyberagent.android.gpuimage.GPUImageFilter;
+import jp.co.cyberagent.android.gpuimage.OpenGlUtils;
 import jp.co.cyberagent.android.gpuimage.sample.GPUImageFilterTools;
 import jp.co.cyberagent.android.gpuimage.sample.GPUImageFilterTools.FilterAdjuster;
 import jp.co.cyberagent.android.gpuimage.sample.GPUImageFilterTools.OnGpuImageFilterChosenListener;
@@ -130,12 +131,15 @@ public class ActivityCamera extends Activity implements OnSeekBarChangeListener,
                 if(isCameraActive){
                     mCamera.onPause();
                     mFilter.setPicTexture(BitmapFactory.decodeResource(getResources(), R.drawable.ldh));
-                    fm = FaceMode.IMAGE_FROM_PICTURE;                    
+                    fm = FaceMode.IMAGE_FROM_PICTURE;             
+//                    mFilter.mFilterSourceTexture = OpenGlUtils.NO_TEXTURE;
                     mFilter.setFm(fm);
                 }else{
                     mCamera.onResume();
                     fm = FaceMode.IMAGE_FROM_CAMERA;
+                    mFilter.mFilterSourceTexture = OpenGlUtils.NO_TEXTURE;
                     mFilter.setFm(fm);
+                    
                 }
                 break;
         }
@@ -261,6 +265,8 @@ public class ActivityCamera extends Activity implements OnSeekBarChangeListener,
 
         public void onResume() {
             setUpCamera(mCurrentCameraId);
+            
+            mGPUImage.RendererTextureUpdate();
         }
 
         public void onPause() {
